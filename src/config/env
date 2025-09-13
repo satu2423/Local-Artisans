@@ -1,0 +1,5 @@
+   VITE_GOOGLE_CLIENT_ID=895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=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
+   VITE_API_URL=http://localhost:5000
+   GOOGLE_REDIRECT_URI=http://localhost:3001/auth/google/callback
+   PORT=5000
