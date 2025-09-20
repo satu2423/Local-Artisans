@@ -5,28 +5,46 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '../src/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { aiService } from '../src/services/aiService';
 
 export default function Assistant() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'bot',
-      content: "Hello! I'm your Local Artisans Assistant. I can help you find the perfect handcrafted items, answer questions about artisans, or assist with any marketplace-related inquiries. How can I help you today?",
-      timestamp: new Date()
+  const [messages, setMessages] = useState(() => {
+    // Load conversation history from localStorage
+    const savedMessages = localStorage.getItem('assistant-conversation');
+    if (savedMessages) {
+      try {
+        const parsed = JSON.parse(savedMessages);
+        return parsed.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      } catch (error) {
+        console.error('Error loading conversation history:', error);
+      }
     }
-  ]);
+    
+    // Default welcome message
+    return [
+      {
+        id: 1,
+        type: 'bot',
+        content: "Hello! I'm Artie, your AI-powered Local Artisans Assistant! 🎨 I'm passionate about connecting you with amazing handcrafted treasures and the talented artisans who create them. I can help you discover unique pieces, learn about traditional techniques, get personalized recommendations, and find exactly what you're looking for. What would you like to explore today?",
+        timestamp: new Date()
+      }
+    ];
+  });
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (but wait for loading to complete)
   React.useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/login');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,6 +52,13 @@ export default function Assistant() {
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  // Save conversation history to localStorage
+  useEffect(() => {
+    if (messages.length > 1) { // Don't save just the initial message
+      localStorage.setItem('assistant-conversation', JSON.stringify(messages));
+    }
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -47,12 +72,13 @@ export default function Assistant() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse = generateBotResponse(inputValue);
+    try {
+      // Use AI service for intelligent responses with conversation context
+      const botResponse = await aiService.generateChatbotResponse(currentInput, messages);
       const botMessage = {
         id: Date.now() + 1,
         type: 'bot',
@@ -60,9 +86,22 @@ export default function Assistant() {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      // Fallback to basic response if AI fails
+      const fallbackResponse = generateBotResponse(currentInput);
+      const botMessage = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: fallbackResponse,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
+
 
   const generateBotResponse = (userInput) => {
     const input = userInput.toLowerCase();
@@ -93,8 +132,21 @@ export default function Assistant() {
     }
   };
 
+  const clearConversation = () => {
+    const newMessages = [
+      {
+        id: 1,
+        type: 'bot',
+        content: "Hello! I'm Artie, your AI-powered Local Artisans Assistant! 🎨 I'm passionate about connecting you with amazing handcrafted treasures and the talented artisans who create them. I can help you discover unique pieces, learn about traditional techniques, get personalized recommendations, and find exactly what you're looking for. What would you like to explore today?",
+        timestamp: new Date()
+      }
+    ];
+    setMessages(newMessages);
+    localStorage.removeItem('assistant-conversation');
+  };
+
   // Show loading if user is not loaded yet
-  if (!user) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -103,11 +155,14 @@ export default function Assistant() {
   }
 
   const quickQuestions = [
-    "Show me pottery items",
-    "What jewelry do you have?",
-    "Tell me about woodwork",
-    "How does shipping work?",
-    "Who are your artisans?"
+    "Show me unique pottery pieces",
+    "What jewelry styles do you have?",
+    "Tell me about woodworking techniques",
+    "How do I care for handcrafted items?",
+    "What makes your artisans special?",
+    "Can I get custom orders?",
+    "What's your shipping policy?",
+    "Show me beginner-friendly crafts"
   ];
 
   return (
@@ -134,14 +189,23 @@ export default function Assistant() {
         >
           {/* Chat Header */}
           <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-6 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot className="h-6 w-6" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Bot className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Artie - Artisan Assistant</h2>
+                  <p className="text-orange-100">Online now • AI-powered</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-semibold">Artisan Assistant</h2>
-                <p className="text-orange-100">Online now</p>
-              </div>
+              <button
+                onClick={clearConversation}
+                className="text-orange-100 hover:text-white transition-colors text-sm px-3 py-1 rounded-full hover:bg-white/10"
+                title="Clear conversation"
+              >
+                Clear Chat
+              </button>
             </div>
           </div>
 

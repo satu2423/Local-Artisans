@@ -1,25 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Send, MessageCircle, User, Package, Clock } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Send, MessageCircle, User, Package, Clock, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useChat } from '../src/contexts/ChatContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { getImageDisplayUrl } from '../src/services/imageService';
+import { socketService } from '../src/services/socketService';
 
 export default function Chat() {
   const { chatId } = useParams();
-  const { chats, activeChat, setActiveChat, sendMessage } = useChat();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { chats, activeChat, setActiveChat, sendMessage, isConnected } = useChat();
+  const { user, loading } = useAuth();
+
+  // Redirect to login if user is not authenticated (but wait for loading to complete)
+  React.useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
+
   const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const lastActiveChatId = useRef(null);
+
+  // Show loading if user is not loaded yet
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   // Set active chat when component mounts or chatId changes
   useEffect(() => {
-    if (chatId && chats.find(chat => chat.id === chatId)) {
+    if (chatId && chats.find(chat => chat.id === chatId) && lastActiveChatId.current !== chatId) {
       setActiveChat(chatId);
+      lastActiveChatId.current = chatId;
     }
   }, [chatId, chats, setActiveChat]);
 
@@ -37,6 +60,33 @@ export default function Chat() {
       
       // Stop typing indicator after a delay
       setTimeout(() => setIsTyping(false), 2000);
+      
+      // Stop user typing indicator
+      socketService.stopTyping(activeChat.id, user.uid, user.name || user.displayName);
+      setIsUserTyping(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+    
+    if (activeChat && isConnected) {
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Start typing indicator
+      if (!isUserTyping) {
+        socketService.startTyping(activeChat.id, user.uid, user.name || user.displayName);
+        setIsUserTyping(true);
+      }
+      
+      // Stop typing indicator after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socketService.stopTyping(activeChat.id, user.uid, user.name || user.displayName);
+        setIsUserTyping(false);
+      }, 2000);
     }
   };
 
@@ -64,8 +114,8 @@ export default function Chat() {
 
   if (!activeChat) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
+      <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="flex-1 w-full px-6 py-8 overflow-y-auto">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -168,46 +218,76 @@ export default function Chat() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="bg-gradient-to-r from-white to-orange-50 shadow-md border-b flex-shrink-0">
+        <div className="w-full px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link
-                to="/chat"
+              <button
+                onClick={() => navigate(-1)}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+              </button>
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 border-2 border-orange-200">
                   <img
-                    src={activeChat.artisanImage || 'https://via.placeholder.com/40'}
+                    src={activeChat.artisanImage || 'https://via.placeholder.com/48'}
                     alt={activeChat.artisanName}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    {activeChat.artisanName}
-                  </h1>
-                  <p className="text-sm text-gray-500">Artisan</p>
+                  <div className="flex items-center space-x-3">
+                    <h1 className="text-xl font-bold text-gray-900">
+                      {activeChat.artisanName}
+                    </h1>
+                    <div className="flex items-center space-x-2">
+                      {activeChat.artisanOnline ? (
+                        <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-green-700">Online</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2 bg-gray-100 px-3 py-1 rounded-full">
+                          <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-600">Offline</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium">Artisan • Handcrafted Specialist</p>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Package className="h-4 w-4" />
-              <span>About: {activeChat.productName}</span>
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Package className="h-5 w-5" />
+                <span className="font-medium">About: {activeChat.productName}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {isConnected ? (
+                  <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
+                    <Wifi className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-700">Connected</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 bg-red-100 px-3 py-1 rounded-full">
+                    <WifiOff className="h-4 w-4 text-red-600" />
+                    <span className="text-sm font-medium text-red-700">Disconnected</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Chat Messages */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-xl shadow-lg h-96 flex flex-col">
+      <div className="flex-1 w-full px-6 py-4 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg h-full flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <AnimatePresence>
@@ -228,7 +308,7 @@ export default function Chat() {
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      <div className={`max-w-md lg:max-w-lg xl:max-w-xl px-4 py-2 rounded-lg ${
                         isUser 
                           ? 'bg-orange-500 text-white' 
                           : 'bg-gray-100 text-gray-900'
@@ -246,8 +326,8 @@ export default function Chat() {
               })}
             </AnimatePresence>
 
-            {/* Typing Indicator */}
-            {isTyping && (
+            {/* Typing Indicators */}
+            {(isTyping || activeChat?.isTyping) && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -260,7 +340,9 @@ export default function Chat() {
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
-                    <span className="text-xs text-gray-500 ml-2">Artisan is typing...</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {activeChat?.isTyping ? `${activeChat.typingUser} is typing...` : 'Artisan is typing...'}
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -270,19 +352,19 @@ export default function Chat() {
           </div>
 
           {/* Message Input */}
-          <div className="border-t p-4">
-            <form onSubmit={handleSendMessage} className="flex space-x-2">
+          <div className="border-t p-6 flex-shrink-0">
+            <form onSubmit={handleSendMessage} className="flex space-x-4">
               <Input
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Type your message..."
                 className="flex-1"
-                disabled={!activeChat}
+                disabled={!activeChat || !isConnected}
               />
               <Button
                 type="submit"
-                disabled={!message.trim() || !activeChat}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4"
+                disabled={!message.trim() || !activeChat || !isConnected}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -291,8 +373,8 @@ export default function Chat() {
         </div>
 
         {/* Product Info */}
-        <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-4">
+        <div className="mt-6 bg-white rounded-xl shadow-lg p-6 flex-shrink-0">
+          <div className="flex items-center space-x-6">
             <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
               <img
                 src={getImageDisplayUrl({ url: activeChat.productImage }, activeChat.productName)}

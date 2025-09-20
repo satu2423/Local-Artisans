@@ -11,9 +11,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { getImageDisplayUrl } from "../src/services/imageService";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "../src/contexts/AuthContext";
+import SpotlightCard from "@/components/SpotlightCard";
 
 export default function Marketplace() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -21,14 +22,6 @@ export default function Marketplace() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [priceRange, setPriceRange] = useState("all");
-  // Removed AI data generation - only show real user products
-
-  // Redirect to login if not authenticated
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -80,16 +73,14 @@ export default function Marketplace() {
     }
 
     setFilteredProducts(filtered);
-  }, [products, searchTerm, selectedCategory, priceRange]); // Dependencies for useCallback
+  }, [products, searchTerm, selectedCategory, priceRange]);
 
-  // Show loading if user is not loaded yet
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    );
-  }
+  // Redirect to login if not authenticated (but wait for loading to complete)
+  React.useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -113,6 +104,15 @@ export default function Marketplace() {
     // This effect runs whenever filterProducts itself changes (due to its useCallback dependencies)
     filterProducts();
   }, [filterProducts]); // Dependency on the memoized filterProducts function
+
+  // Show loading if user is not loaded yet
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -249,54 +249,59 @@ export default function Marketplace() {
             </div>
           ) : (
             filteredProducts.map((product) => (
-              <Link
-                to={createPageUrl("product", product)}
+              <SpotlightCard 
                 key={product.id}
                 className="group block rounded-lg overflow-hidden shadow-lg bg-white"
+                spotlightColor="rgba(255, 165, 0, 0.15)"
               >
-                <div className="relative pb-3/4">
-                  <motion.img
-                    src={getImageDisplayUrl(
-                      product.images && product.images.length > 0 ? product.images[0] : null,
-                      product.name
-                    )}
-                    alt={product.images && product.images.length > 0 && product.images[0]?.alt
-                      ? product.images[0].alt
-                      : `${product.name} - Product Image`}
-                    className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
-                    layoutId={`image-${product.id}`}
-                    onError={(e) => {
-                      e.target.src = getImageDisplayUrl(null, product.name);
-                    }}
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <Badge className={`rounded-full text-xs font-semibold py-1 px-3 ${getCategoryColor(product.category)}`}>
-                        {product.category}
-                      </Badge>
-                      <span className="text-gray-500 text-xs">
-                        {product.location}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800 group-hover:text-orange-500 transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      By {product.artisan_name}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-gray-900">
-                        ₹{product.price.toFixed(2)}
-                      </span>
-                      <Button variant="outline" size="sm" className="rounded-full">
-                        <Heart className="h-5 w-5 text-gray-400" />
-                      </Button>
-                    </div>
+                <Link
+                  to={createPageUrl("product", product)}
+                  className="block"
+                >
+                  <div className="relative pb-3/4">
+                    <motion.img
+                      src={getImageDisplayUrl(
+                        product.images && product.images.length > 0 ? product.images[0] : null,
+                        product.name
+                      )}
+                      alt={product.images && product.images.length > 0 && product.images[0]?.alt
+                        ? product.images[0].alt
+                        : `${product.name} - Product Image`}
+                      className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
+                      layoutId={`image-${product.id}`}
+                      onError={(e) => {
+                        e.target.src = getImageDisplayUrl(null, product.name);
+                      }}
+                    />
                   </div>
-                </CardContent>
-              </Link>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`rounded-full text-xs font-semibold py-1 px-3 ${getCategoryColor(product.category)}`}>
+                          {product.category}
+                        </Badge>
+                        <span className="text-gray-500 text-xs">
+                          {product.location}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 group-hover:text-orange-500 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        By {product.artisan_name}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl font-bold text-gray-900">
+                          ₹{product.price.toFixed(2)}
+                        </span>
+                        <Button variant="outline" size="sm" className="rounded-full">
+                          <Heart className="h-5 w-5 text-gray-400" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Link>
+              </SpotlightCard>
             ))
           )}
         </motion.div>

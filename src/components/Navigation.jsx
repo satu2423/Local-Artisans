@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, ShoppingBag, Upload, MessageCircle, User, LogOut } from 'lucide-react';
+import { Menu, X, ShoppingBag, Upload, MessageCircle, User, LogOut, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import { useChat } from '../contexts/ChatContext';
 import CartIcon from './CartIcon';
 import ChatIcon from './ChatIcon';
+import GooeyNav from './GooeyNav';
+import Dock from './Dock';
 
 export default function Navigation() {
   const { user, logout } = useAuth();
+  const { cart } = useCart();
+  const { getTotalUnreadCount } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,6 +27,43 @@ export default function Navigation() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Create dock items for authenticated users
+  const dockItems = user ? [
+    {
+      icon: (
+        <div className="relative">
+          <MessageCircle className="h-5 w-5 text-gray-600 hover:text-orange-500 transition-colors" />
+          {getTotalUnreadCount() > 0 && (
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+              {getTotalUnreadCount() > 99 ? '99+' : getTotalUnreadCount()}
+            </span>
+          )}
+        </div>
+      ),
+      label: 'Chat with Artisans',
+      onClick: () => navigate('/chat')
+    },
+    {
+      icon: (
+        <div className="relative">
+          <ShoppingCart className="h-5 w-5 text-gray-600 hover:text-orange-500 transition-colors" />
+          {cart.totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+              {cart.totalItems > 99 ? '99+' : cart.totalItems}
+            </span>
+          )}
+        </div>
+      ),
+      label: 'Shopping Cart',
+      onClick: () => navigate('/cart')
+    },
+    {
+      icon: <LogOut className="h-5 w-5 text-gray-600 hover:text-orange-500 transition-colors" />,
+      label: 'Logout',
+      onClick: () => logout(navigate)
+    }
+  ] : [];
+
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,35 +76,26 @@ export default function Navigation() {
             <span className="text-xl font-bold text-gray-900">Local Artisans</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
-              // Only show items that don't require auth or if user is authenticated
-              if (item.requiresAuth && !user) return null;
-              
-              return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive(item.path)
-                      ? 'text-orange-600 bg-orange-50'
-                      : 'text-gray-700 hover:text-orange-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {item.icon && <item.icon className="h-4 w-4" />}
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
+          {/* Desktop Navigation with GooeyNav */}
+          <div className="hidden md:flex items-center">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-full p-1">
+              <GooeyNav
+                items={navItems
+                  .filter(item => !item.requiresAuth || user)
+                  .map(item => ({
+                    label: item.name,
+                    path: item.path
+                  }))}
+                colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+                initialActiveIndex={navItems.findIndex(item => isActive(item.path))}
+              />
+            </div>
           </div>
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
-                <ChatIcon />
-                <CartIcon />
                 <div className="flex items-center space-x-2">
                   <img
                     src={user.picture || 'https://via.placeholder.com/32'}
@@ -72,13 +106,13 @@ export default function Navigation() {
                     {user.name}
                   </span>
                 </div>
-                <button
-                  onClick={() => logout(navigate)}
-                  className="text-gray-700 hover:text-orange-600 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-1"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </button>
+                <Dock 
+                  items={dockItems}
+                  className="dock-custom"
+                  magnification={50}
+                  baseItemSize={40}
+                  panelHeight={40}
+                />
               </div>
             ) : (
               <>

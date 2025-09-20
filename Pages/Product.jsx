@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Heart, Share2, Star, MapPin, User, Sparkles, BookOpen, ShoppingCart, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { useAuth } from '../src/contexts/AuthContext';
 
 export default function Product() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -44,8 +45,8 @@ export default function Product() {
     };
 
     const chatId = startChat(artisanData, productData);
-    // Navigate to chat
-    window.location.href = `/chat/${chatId}`;
+    // Navigate to chat using React Router
+    navigate(`/chat/${chatId}`);
   };
 
   useEffect(() => {

@@ -11,7 +11,7 @@ import { videoGenerationService } from '../src/services/videoGenerationService';
 import Product from '../src/entities/Product';
 
 export default function Upload() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -31,15 +31,15 @@ export default function Upload() {
   const [generatedVideo, setGeneratedVideo] = useState(null);
   const [showVideoPreview, setShowVideoPreview] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (but wait for loading to complete)
   React.useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/login');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   // Show loading if user is not loaded yet
-  if (!user) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>

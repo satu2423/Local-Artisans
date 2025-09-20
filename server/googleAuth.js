@@ -18,7 +18,7 @@ router.post('/exchange-code', async (req, res) => {
       client_secret: process.env.GOOGLE_CLIENT_SECRET || 'GOCSPX-your-client-secret-here',
       code: code,
       grant_type: 'authorization_code',
-      redirect_uri: 'http://localhost:3000' // Must match exactly what's in Google Cloud Console
+      redirect_uri: 'http://localhost:3000/auth/google/callback' // Must match exactly what's in Google Cloud Console
     });
 
     const { access_token } = tokenResponse.data;

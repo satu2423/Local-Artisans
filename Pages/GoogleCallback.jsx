@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../src/contexts/AuthContext';
 
 // Function to get real user info from Google using the authorization code
 const getGoogleUserInfo = async (code) => {
@@ -15,7 +16,7 @@ const getGoogleUserInfo = async (code) => {
         client_secret: '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', // Your actual client secret
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: 'http://localhost:3000' // Must match Google Cloud Console
+        redirect_uri: 'http://localhost:3000/auth/google/callback' // Must match Google Cloud Console
       })
     });
 
@@ -52,7 +53,8 @@ const getGoogleUserInfo = async (code) => {
       picture: googleUserData.picture,
       provider: 'google',
       uid: googleUserData.id,
-      verified_email: googleUserData.verified_email
+      verified_email: googleUserData.verified_email,
+      role: 'customer' // Default role for new users
     };
     
     return userInfo;
@@ -65,6 +67,7 @@ const getGoogleUserInfo = async (code) => {
 export default function GoogleCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { handleGoogleCallback } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -82,29 +85,33 @@ export default function GoogleCallback() {
           // Get user information from Google
           const userInfo = await getGoogleUserInfo(code);
           
-          // Store user in localStorage
-          localStorage.setItem('user', JSON.stringify(userInfo));
+          // Use AuthContext to handle the callback properly
+          const result = await handleGoogleCallback(userInfo);
           
-          // Redirect to home page
-          navigate('/');
+          if (result.success) {
+            // Redirect to marketplace after successful authentication
+            navigate('/marketplace');
+          } else {
+            throw new Error(result.error || 'Authentication failed');
+          }
         } else {
           // No code received
           navigate('/login?error=' + encodeURIComponent('No authorization code received'));
         }
       } catch (error) {
         console.error('Callback error:', error);
-        navigate('/login?error=' + encodeURIComponent('Failed to get user info'));
+        navigate('/login?error=' + encodeURIComponent('Failed to authenticate with Google'));
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, handleGoogleCallback]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-        <p className="text-gray-600">Completing Google authentication...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+        <p className="text-gray-600">Signing you in...</p>
       </div>
     </div>
   );

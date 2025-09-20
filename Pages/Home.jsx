@@ -3,28 +3,31 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, Users, Globe, Lock } from 'lucide-react';
 import { useAuth } from '../src/contexts/AuthContext';
+import Threads from '../src/components/Threads';
 
 export default function Home() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Handle OAuth callback at root path
-  useEffect(() => {
-    const code = searchParams.get('code');
-    const error = searchParams.get('error');
-    
-    if (code || error) {
-      // Redirect to callback handler
-      navigate('/auth/google/callback?' + searchParams.toString());
-    }
-  }, [searchParams, navigate]);
+  // OAuth callback handling removed - now handled directly by /auth/google/callback route
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-orange-50 to-amber-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-orange-50 to-amber-50 py-20 overflow-hidden">
+        {/* Threads Background Effect */}
+        <div className="absolute inset-0 opacity-40">
+          <Threads
+            color={[0.97, 0.57, 0.22]} // Orange color in RGB (0-1 range)
+            amplitude={1.2}
+            distance={0.3}
+            enableMouseInteraction={true}
+            className="w-full h-full"
+          />
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -149,8 +152,19 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="relative py-20 bg-gray-900 overflow-hidden">
+        {/* Threads Background Effect */}
+        <div className="absolute inset-0 opacity-30">
+          <Threads
+            color={[0.5, 0.5, 0.5]} // Gray color in RGB (0-1 range)
+            amplitude={0.8}
+            distance={0.2}
+            enableMouseInteraction={true}
+            className="w-full h-full"
+          />
+        </div>
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
