@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-box { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 OAuth Debug Tool</h1>
+    <p>This tool will help us see exactly what URLs your app is generating for OAuth.</p>
+    
+    <div class="debug-box">
+        <h3>Current Environment Info:</h3>
+        <p><strong>Current URL:</strong> <span id="current-url"></span></p>
+        <p><strong>Origin:</strong> <span id="current-origin"></span></p>
+        <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+    </div>
+
+    <div class="debug-box">
+        <h3>OAuth Configuration:</h3>
+        <p><strong>Client ID:</strong> 895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com</p>
+        <p><strong>Redirect URI:</strong> <span id="redirect-uri"></span></p>
+        <p><strong>Full OAuth URL:</strong> <span id="oauth-url"></span></p>
+    </div>
+
+    <div class="debug-box">
+        <h3>Google Cloud Console Settings (What you should have):</h3>
+        <p><strong>Authorized JavaScript origins:</strong></p>
+        <ul>
+            <li>http://localhost:3000</li>
+            <li>https://localartisans-place.vercel.app</li>
+        </ul>
+        <p><strong>Authorized redirect URIs:</strong></p>
+        <ul>
+            <li>http://localhost:3000/auth/google/callback</li>
+            <li>https://localartisans-place.vercel.app/auth/google/callback</li>
+        </ul>
+    </div>
+
+    <button onclick="testOAuth()">🧪 Test OAuth URL</button>
+    <button onclick="copyOAuthUrl()">📋 Copy OAuth URL</button>
+    <button onclick="checkGoogleConsole()">🔗 Open Google Cloud Console</button>
+
+    <div id="test-result" class="debug-box" style="display: none;">
+        <h3>Test Result:</h3>
+        <div id="result-content"></div>
+    </div>
+
+    <script>
+        // Display current environment info
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('current-origin').textContent = window.location.origin;
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+
+        // Generate OAuth configuration
+        const clientId = '895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com';
+        const currentOrigin = window.location.origin;
+        const redirectUri = `${currentOrigin}/auth/google/callback`;
+        
+        document.getElementById('redirect-uri').textContent = redirectUri;
+        
+        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20email%20profile&response_type=code&access_type=offline&prompt=consent`;
+        document.getElementById('oauth-url').textContent = oauthUrl;
+
+        function testOAuth() {
+            const resultDiv = document.getElementById('test-result');
+            const resultContent = document.getElementById('result-content');
+            
+            resultDiv.style.display = 'block';
+            resultContent.innerHTML = `
+                <p class="success">✅ OAuth URL generated successfully!</p>
+                <p><strong>Redirect URI being sent:</strong> ${redirectUri}</p>
+                <p><strong>Make sure this EXACT URL is in your Google Cloud Console:</strong></p>
+                <ul>
+                    <li>Go to: <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
+                    <li>Find your OAuth Client ID: ${clientId}</li>
+                    <li>Click the pencil icon to edit</li>
+                    <li>Add this EXACT URL to "Authorized redirect URIs": <strong>${redirectUri}</strong></li>
+                    <li>Add this EXACT URL to "Authorized JavaScript origins": <strong>${currentOrigin}</strong></li>
+                    <li>Click Save</li>
+                </ul>
+            `;
+        }
+
+        function copyOAuthUrl() {
+            navigator.clipboard.writeText(oauthUrl).then(() => {
+                alert('OAuth URL copied to clipboard!');
+            });
+        }
+
+        function checkGoogleConsole() {
+            window.open('https://console.cloud.google.com/apis/credentials', '_blank');
+        }
+    </script>
+</body>
+</html>

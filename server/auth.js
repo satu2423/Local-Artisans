@@ -13,10 +13,22 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-se
 // Dynamic redirect URI based on environment
 const getRedirectUri = (req) => {
   const origin = req.get('origin') || req.get('referer')?.split('/').slice(0, 3).join('/');
+  console.log('Request origin:', origin);
+  console.log('Request referer:', req.get('referer'));
+  
   if (origin && origin.includes('vercel.app')) {
-    return `${origin}/auth/google/callback`;
+    const redirectUri = `${origin}/auth/google/callback`;
+    console.log('Using production redirect URI:', redirectUri);
+    return redirectUri;
+  } else if (origin && origin.includes('localhost')) {
+    const redirectUri = `${origin}/auth/google/callback`;
+    console.log('Using localhost redirect URI:', redirectUri);
+    return redirectUri;
   }
-  return process.env.GOOGLE_REDIRECT_URI || 'https://localartisans-place.vercel.app/auth/google/callback';
+  
+  const fallbackUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
+  console.log('Using fallback redirect URI:', fallbackUri);
+  return fallbackUri;
 };
 
 // Debug logging
