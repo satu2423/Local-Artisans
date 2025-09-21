@@ -115,19 +115,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('user');
     
-    // Clear all other localStorage data
-    localStorage.removeItem('cart');
+    // Clear chat-related data but preserve cart
     localStorage.removeItem('chats');
     localStorage.removeItem('chatMessages');
     localStorage.removeItem('artisanChats');
     
-    // Clear any other cached data
+    // Clear any other cached data but preserve cart
     localStorage.removeItem('authToken');
     localStorage.removeItem('userPreferences');
     
     // Clear session storage as well
     sessionStorage.clear();
     
+    // Note: Cart data (stored as 'artisanCart') is preserved for guest checkout
     // Force a page reload to clear all contexts and state
     window.location.href = '/';
   };
