@@ -9,7 +9,7 @@ const router = express.Router();
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret-here';
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/google/callback';
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
 
 // Debug logging
 console.log('OAuth Configuration:');

@@ -16,7 +16,7 @@ export const GOOGLE_CONFIG = {
   client_id: GOOGLE_CLIENT_ID,
   scope: GOOGLE_SCOPES,
   response_type: 'code',
-  redirect_uri: 'http://localhost:3001/auth/google/callback', // Must match Google Cloud Console
+  redirect_uri: 'http://localhost:3000/auth/google/callback', // Must match Google Cloud Console
   access_type: 'offline',
   prompt: 'consent'
 };
