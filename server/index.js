@@ -13,13 +13,23 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001"],
-    methods: ["GET", "POST"]
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      process.env.VITE_FRONTEND_URL || "https://localartisans-place.vercel.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 app.use(cors());
 app.use(express.json());
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
+});
 
 app.use('/api/auth', authRouter);
 app.use('/api/google', googleAuthRouter);
@@ -106,6 +116,13 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with Socket.io support`);
-});
+
+// For Vercel, export the app
+export default app;
+
+// For local development, start the server
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} with Socket.io support`);
+  });
+}
