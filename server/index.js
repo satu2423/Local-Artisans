@@ -23,6 +23,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRouter);
 app.use('/api/google', googleAuthRouter);
+app.use('/api/auth/google', googleAuthRouter); // Add this route for compatibility
 
 // Socket.io connection handling
 io.on('connection', (socket) => {

@@ -1,5 +1,5 @@
 // Google OAuth Configuration
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
 
 // Google OAuth Scopes
 export const GOOGLE_SCOPES = [
@@ -30,7 +30,7 @@ export const getGoogleAuthUrl = () => {
 // Handle Google OAuth callback
 export const handleGoogleCallback = async (code) => {
   try {
-    const response = await fetch(`${API_URL}/api/auth/google`, {
+    const response = await fetch(`${API_URL}/api/google/exchange-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
