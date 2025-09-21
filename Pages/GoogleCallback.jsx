@@ -2,58 +2,44 @@ import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../src/contexts/AuthContext';
 
-// Function to get real user info from Google using the authorization code
+// Function to get user info from Google via our backend
 const getGoogleUserInfo = async (code) => {
   try {
-    // Exchange authorization code for access token
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    
+    // Use our backend to exchange the code for user info
+    const response = await fetch(`${API_URL}/api/google/exchange-code`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams({
-        client_id: '895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com',
-        client_secret: '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', // Your actual client secret
-        code: code,
-        grant_type: 'authorization_code',
-        redirect_uri: 'http://localhost:3000/auth/google/callback' // Must match Google Cloud Console
-      })
+      body: JSON.stringify({ code }),
     });
 
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
+    if (!response.ok) {
+      const errorData = await response.json();
       console.error('Token exchange failed:', errorData);
-      throw new Error('Failed to exchange authorization code for access token');
+      throw new Error(errorData.error || 'Failed to exchange authorization code for access token');
     }
 
-    const tokenData = await tokenResponse.json();
-    const { access_token } = tokenData;
-
-    // Get user info from Google using the access token
-    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: {
-        'Authorization': `Bearer ${access_token}`
-      }
-    });
-
-    if (!userResponse.ok) {
-      throw new Error('Failed to get user info from Google');
-    }
-
-    const googleUserData = await userResponse.json();
+    const data = await response.json();
     
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to get user info from Google');
+    }
+
     // Format user data for our app
     const userInfo = {
-      id: googleUserData.id,
-      email: googleUserData.email,
-      name: googleUserData.name,
-      displayName: googleUserData.name,
-      given_name: googleUserData.given_name,
-      family_name: googleUserData.family_name,
-      picture: googleUserData.picture,
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.name,
+      displayName: data.user.displayName || data.user.name,
+      given_name: data.user.given_name,
+      family_name: data.user.family_name,
+      picture: data.user.picture,
       provider: 'google',
-      uid: googleUserData.id,
-      verified_email: googleUserData.verified_email,
+      uid: data.user.uid || data.user.id,
+      verified_email: data.user.verified_email,
       role: 'customer' // Default role for new users
     };
     
