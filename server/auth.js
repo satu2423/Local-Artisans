@@ -10,25 +10,20 @@ const router = express.Router();
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret-here';
 
-// Dynamic redirect URI based on environment
+// Simple redirect URI - matches Google Cloud Console exactly
 const getRedirectUri = (req) => {
   const origin = req.get('origin') || req.get('referer')?.split('/').slice(0, 3).join('/');
   console.log('Request origin:', origin);
-  console.log('Request referer:', req.get('referer'));
   
+  // Use exact URLs that match Google Cloud Console
   if (origin && origin.includes('vercel.app')) {
-    const redirectUri = `${origin}/auth/google/callback`;
-    console.log('Using production redirect URI:', redirectUri);
-    return redirectUri;
-  } else if (origin && origin.includes('localhost')) {
-    const redirectUri = `${origin}/auth/google/callback`;
-    console.log('Using localhost redirect URI:', redirectUri);
-    return redirectUri;
+    return 'https://localartisans-place.vercel.app/auth/google/callback';
+  } else if (origin && origin.includes('localhost:3000')) {
+    return 'http://localhost:3000/auth/google/callback';
   }
   
-  const fallbackUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
-  console.log('Using fallback redirect URI:', fallbackUri);
-  return fallbackUri;
+  // Default fallback
+  return 'http://localhost:3000/auth/google/callback';
 };
 
 // Debug logging

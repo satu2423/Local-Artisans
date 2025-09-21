@@ -11,12 +11,20 @@ export const GOOGLE_SCOPES = [
 // Get API URL from environment
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Get the current origin (works for both localhost and production)
-const getCurrentOrigin = () => {
+
+// Simple OAuth Configuration - Fixed URLs
+const getRedirectUri = () => {
   if (typeof window !== 'undefined') {
-    return window.location.origin;
+    const origin = window.location.origin;
+    // Use exact URLs that match Google Cloud Console
+    if (origin === 'http://localhost:3000') {
+      return 'http://localhost:3000/auth/google/callback';
+    } else if (origin.includes('vercel.app')) {
+      return 'https://localartisans-place.vercel.app/auth/google/callback';
+    }
   }
-  return import.meta.env.VITE_FRONTEND_URL || 'https://localartisans-place.vercel.app';
+  // Fallback
+  return 'http://localhost:3000/auth/google/callback';
 };
 
 // Google OAuth Configuration
@@ -24,7 +32,7 @@ export const GOOGLE_CONFIG = {
   client_id: GOOGLE_CLIENT_ID,
   scope: GOOGLE_SCOPES,
   response_type: 'code',
-  redirect_uri: `${getCurrentOrigin()}/auth/google/callback`, // Dynamic redirect URI
+  redirect_uri: getRedirectUri(), // Simple fixed redirect URI
   access_type: 'offline',
   prompt: 'consent'
 };
