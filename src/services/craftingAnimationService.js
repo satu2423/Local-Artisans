@@ -3,7 +3,7 @@
  * Uses Gemini AI to generate product-specific crafting animations
  */
 
-const GEMINI_API_KEY = 'AIzaSyBw6nzxCViLYRkBNky6NvcK0jf2OjCd_fs';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'your_gemini_api_key_here';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
 /**

@@ -14,8 +14,8 @@ router.post('/exchange-code', async (req, res) => {
 
     // Exchange code for access token
     const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-      client_id: process.env.GOOGLE_CLIENT_ID || '895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com',
-      client_secret: process.env.GOOGLE_CLIENT_SECRET || 'GOCSPX-your-client-secret-here',
+      client_id: process.env.GOOGLE_CLIENT_ID || 'your_google_client_id_here',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || 'your_google_client_secret_here',
       code: code,
       grant_type: 'authorization_code',
       redirect_uri: 'http://localhost:3000/auth/google/callback' // Must match exactly what's in Google Cloud Console

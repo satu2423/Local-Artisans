@@ -1,7 +1,7 @@
 // Google Gemini AI service for generating product stories
 // Using Google's Vertex AI/Gemini API
 
-const GEMINI_API_KEY = 'AIzaSyBw6nzxCViLYRkBNky6NvcK0jf2OjCd_fs'; // Using your existing API key
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'your_gemini_api_key_here';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
 /**
