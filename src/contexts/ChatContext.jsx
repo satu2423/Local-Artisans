@@ -14,7 +14,8 @@ const CHAT_ACTIONS = {
   SET_ACTIVE_CHAT: 'SET_ACTIVE_CHAT',
   MARK_AS_READ: 'MARK_AS_READ',
   SET_TYPING: 'SET_TYPING',
-  SET_ONLINE_STATUS: 'SET_ONLINE_STATUS'
+  SET_ONLINE_STATUS: 'SET_ONLINE_STATUS',
+  CLEAR_ALL_CHATS: 'CLEAR_ALL_CHATS'
 };
 
 // Chat Reducer
@@ -159,6 +160,13 @@ const chatReducer = (state, action) => {
           }
           return chat;
         })
+      };
+
+    case CHAT_ACTIONS.CLEAR_ALL_CHATS:
+      return {
+        ...state,
+        chats: [],
+        activeChatId: null
       };
 
     default:
@@ -459,6 +467,11 @@ Respond as the artisan would, with expertise and enthusiasm about this specific 
     return chatState.chats.reduce((total, chat) => total + chat.unreadCount, 0);
   }, [chatState.chats]);
 
+  const clearAllChats = useCallback(() => {
+    dispatch({ type: CHAT_ACTIONS.CLEAR_ALL_CHATS });
+    localStorage.removeItem('artisanChats');
+  }, []);
+
   const value = {
     chats: chatState.chats,
     activeChatId: chatState.activeChatId,
@@ -467,7 +480,8 @@ Respond as the artisan would, with expertise and enthusiasm about this specific 
     startChat,
     sendMessage,
     setActiveChat,
-    getTotalUnreadCount
+    getTotalUnreadCount,
+    clearAllChats
   };
 
   return (

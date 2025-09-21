@@ -61,6 +61,10 @@ router.post('/google/exchange-code', async (req, res) => {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
 
+    console.log('Attempting to exchange code for token...');
+    console.log('Client ID:', CLIENT_ID);
+    console.log('Redirect URI:', REDIRECT_URI);
+
     // Exchange code for access token
     const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
       client_id: CLIENT_ID,
@@ -92,9 +96,19 @@ router.post('/google/exchange-code', async (req, res) => {
       verified_email: userResponse.data.verified_email
     };
 
+    console.log('Successfully authenticated user:', userInfo.email);
     res.json({ success: true, user: userInfo });
   } catch (error) {
     console.error('Error exchanging code:', error.response?.data || error.message);
+    
+    // Handle specific OAuth errors
+    if (error.response?.data?.error === 'invalid_grant') {
+      return res.status(400).json({ 
+        error: 'Authorization code expired or invalid. Please try logging in again.',
+        code: 'INVALID_GRANT'
+      });
+    }
+    
     res.status(500).json({ 
       error: 'Failed to exchange authorization code',
       details: error.response?.data || error.message

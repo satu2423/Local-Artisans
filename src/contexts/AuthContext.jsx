@@ -111,12 +111,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (navigate) => {
+    // Clear user state
     setUser(null);
     localStorage.removeItem('user');
-    // Redirect to homepage after logout
-    if (navigate) {
-      navigate('/');
-    }
+    
+    // Clear all other localStorage data
+    localStorage.removeItem('cart');
+    localStorage.removeItem('chats');
+    localStorage.removeItem('chatMessages');
+    localStorage.removeItem('artisanChats');
+    
+    // Clear any other cached data
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userPreferences');
+    
+    // Clear session storage as well
+    sessionStorage.clear();
+    
+    // Force a page reload to clear all contexts and state
+    window.location.href = '/';
   };
 
   const value = {
