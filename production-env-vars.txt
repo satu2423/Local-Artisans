@@ -1,0 +1,20 @@
+# Environment Variables for Vercel Dashboard
+# Copy these to Vercel → Settings → Environment Variables
+
+# Frontend Environment Variables (VITE_ prefix)
+VITE_GOOGLE_CLIENT_ID=895087918866-t9052h3pusqen11ri1eh0csqfa4bc9qe.apps.googleusercontent.com
+VITE_API_URL=https://localartisans-place.vercel.app
+VITE_FRONTEND_URL=https://localartisans-place.vercel.app
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Backend Environment Variables
+GOOGLE_CLIENT_SECRET=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
+GOOGLE_REDIRECT_URI=https://localartisans-place.vercel.app/auth/google/callback
+PORT=5000
+
+# Firebase Configuration (already configured in Firebasesdk.js)
+# No additional setup needed for Firebase
+
+# IMPORTANT: Update Google Cloud Console OAuth settings:
+# Authorized JavaScript origins: https://localartisans-place.vercel.app
+# Authorized redirect URIs: https://localartisans-place.vercel.app/auth/google/callback

@@ -11,12 +11,20 @@ export const GOOGLE_SCOPES = [
 // Get API URL from environment
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Get the current origin (works for both localhost and production)
+const getCurrentOrigin = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return import.meta.env.VITE_FRONTEND_URL || 'https://localartisans-place.vercel.app';
+};
+
 // Google OAuth Configuration
 export const GOOGLE_CONFIG = {
   client_id: GOOGLE_CLIENT_ID,
   scope: GOOGLE_SCOPES,
   response_type: 'code',
-  redirect_uri: 'http://localhost:3000/auth/google/callback', // Must match Google Cloud Console
+  redirect_uri: `${getCurrentOrigin()}/auth/google/callback`, // Dynamic redirect URI
   access_type: 'offline',
   prompt: 'consent'
 };

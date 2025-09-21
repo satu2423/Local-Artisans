@@ -9,21 +9,28 @@ const router = express.Router();
 
 const CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret-here';
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
+
+// Dynamic redirect URI based on environment
+const getRedirectUri = (req) => {
+  const origin = req.get('origin') || req.get('referer')?.split('/').slice(0, 3).join('/');
+  if (origin && origin.includes('vercel.app')) {
+    return `${origin}/auth/google/callback`;
+  }
+  return process.env.GOOGLE_REDIRECT_URI || 'https://localartisans-place.vercel.app/auth/google/callback';
+};
 
 // Debug logging
 console.log('OAuth Configuration:');
 console.log('CLIENT_ID:', CLIENT_ID);
 console.log('CLIENT_SECRET:', CLIENT_SECRET ? '***' + CLIENT_SECRET.slice(-4) : 'NOT SET');
-console.log('REDIRECT_URI:', REDIRECT_URI);
-
-const oAuth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 router.post('/google', async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: 'Missing code' });
 
   try {
+    const redirectUri = getRedirectUri(req);
+    const oAuth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, redirectUri);
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
@@ -61,9 +68,10 @@ router.post('/google/exchange-code', async (req, res) => {
       return res.status(400).json({ error: 'Authorization code is required' });
     }
 
+    const redirectUri = getRedirectUri(req);
     console.log('Attempting to exchange code for token...');
     console.log('Client ID:', CLIENT_ID);
-    console.log('Redirect URI:', REDIRECT_URI);
+    console.log('Redirect URI:', redirectUri);
 
     // Exchange code for access token
     const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
@@ -71,7 +79,7 @@ router.post('/google/exchange-code', async (req, res) => {
       client_secret: CLIENT_SECRET,
       code: code,
       grant_type: 'authorization_code',
-      redirect_uri: REDIRECT_URI
+      redirect_uri: redirectUri
     });
 
     const { access_token } = tokenResponse.data;
